@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>EduPay Pico — Smart Coaching Payment Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+
+:root{
+  --bg:#080b14;
+  --bg-2:#0d1220;
+  --bg-grid: rgba(255,255,255,0.025);
+  --panel: rgba(255,255,255,0.045);
+  --panel-strong: rgba(255,255,255,0.07);
+  --panel-border: rgba(255,255,255,0.09);
+  --panel-border-strong: rgba(255,255,255,0.16);
+  --text:#eef1f8;
+  --text-dim:#93a0bf;
+  --text-faint:#5b6788;
+  --gold:#f2b705;
+  --gold-soft:rgba(242,183,5,0.15);
+  --teal:#2dd4bf;
+  --teal-soft:rgba(45,212,191,0.15);
+  --coral:#fb6a6a;
+  --coral-soft:rgba(251,106,106,0.15);
+  --amber:#fdba74;
+  --amber-soft:rgba(253,186,116,0.15);
+  --radius-lg:22px;
+  --radius-md:16px;
+  --radius-sm:10px;
+  --shadow-lg:0 20px 60px -10px rgba(0,0,0,0.6);
+  --shadow-md:0 10px 30px -6px rgba(0,0,0,0.5);
+  --font-d:'Space Grotesk',sans-serif;
+  --font-b:'Inter',sans-serif;
+  --font-m:'JetBrains Mono',monospace;
+  --sidebar-w:250px;
+  --header-h:68px;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html{-webkit-tap-highlight-color:transparent;}
+body{
+  font-family:var(--font-b);
+  color:var(--text);
+  background:
+    radial-gradient(1100px 600px at 85% -10%, rgba(242,183,5,0.08), transparent 60%),
+    radial-gradient(900px 500px at 0% 100%, rgba(45,212,191,0.06), transparent 60%),
+    var(--bg);
+  min-height:100vh;
+  overflow-x:hidden;
+  line-height:1.5;
+}
+body::before{
+  content:"";
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+  background-size:42px 42px;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 80%);
+}
+::selection{ background:var(--gold-soft); color:var(--gold); }
+::-webkit-scrollbar{ width:8px; height:8px; }
+::-webkit-scrollbar-thumb{ background:var(--panel-border-strong); border-radius:10px; }
+a{ color:inherit; text-decoration:none; }
+button{ font-family:inherit; cursor:pointer; }
+input,select,textarea{ font-family:inherit; color:var(--text); }
+:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; border-radius:6px; }
+h1,h2,h3,h4{ font-family:var(--font-d); letter-spacing:-0.01em; }
+
+/* ---------- Glass primitives ---------- */
+.glass{
+  background:var(--panel);
+  backdrop-filter:blur(22px) saturate(140%);
+  -webkit-backdrop-filter:blur(22px) saturate(140%);
+  border:1px solid var(--panel-border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-md);
+}
+.card{
+  padding:20px;
+  transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.card:hover{ transform:translateY(-3px); border-color:var(--panel-border-strong); box-shadow:var(--shadow-lg); }
+
+/* ---------- App shell ---------- */
+#app{ position:relative; z-index:1; min-height:100vh; }
+
+/* ================= HEADER ================= */
+
+.topbar{
+    position:sticky;
+    top:0;
+    z-index:1000;
+
+    height:60px;
+    padding:0 12px;
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    background:rgba(16,18,30,.92);
+    backdrop-filter:blur(20px);
+
+    border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.hdr-left{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.brand-wrap{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.brand-info{
+    display:flex;
+    flex-direction:column;
+    line-height:1.1;
+}
+
+.logo-img{
+    width:36px;
+    height:36px;
+    object-fit:contain;
+}
+
+.brand-title{
+    font-size:20px;
+    font-weight:800;
+    color:#fff;
+    margin:0;
+}
+
+.brand-title span{
+    color:var(--gold);
+}
+
+.brand-sub{
+    font-size:11px;
+    color:var(--text-dim);
+}
+
+.hdr-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.icon-btn{
+    width:36px;
+    height:36px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    background:transparent;
+    border:none;
+    box-shadow:none;
+
+    color:#fff;
+    border-radius:10px;
+}
+
+.icon-btn:hover{
+    background:rgba(255,255,255,.08);
+}
+
+.profile-chip{
+    display:flex;
+    align-items:center;
+    gap:8px;
+
+    background:transparent;
+    border:none;
+    padding:0;
+    box-shadow:none;
+}
+
+.avatar{
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:var(--gold);
+    color:#111;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    font-weight:700;
+}
+
+.clock-wrap{
+    text-align:right;
+}
+
+.clock-time{
+    font-size:12px;
+}
+
+.clock-date{
+    font-size:10px;
+    color:var(--text-dim);
+}
+
+@media(max-width:768px){
+
+.topbar{
+    height:56px;
+    padding:0 10px;
+}
+
+.brand-title{
+    font-size:17px;
+}
+
+.brand-sub{
+    display:none;
+}
+
+.logo-img{
+    width:32px;
+    height:32px;
+}
+
+.clock-wrap{
+    display:none;
+}
+
+.profile-name,
+.profile-info small{
+    display:none;
+}
+
+}
+
+/* SIDEBAR */
+.sidebar{
+  position:fixed; top:var(--header-h); left:0; bottom:0; width:var(--sidebar-w);
+  padding:18px 12px; z-index:50; overflow-y:auto;
+  background:rgba(10,14,24,0.85); backdrop-filter:blur(18px);
+  border-right:1px solid var(--panel-border);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+.nav-item{
+  display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:12px;
+  color:var(--text-dim); font-size:.87rem; font-weight:500; margin-bottom:4px; transition:.18s;
+  border:1px solid transparent;
+}
+.nav-item .ic{ font-size:1.05rem; width:20px; text-align:center; }
+.nav-item:hover{ background:var(--panel); color:var(--text); }
+.nav-item.active{ background:linear-gradient(90deg, var(--gold-soft), transparent); color:var(--gold); border-color:rgba(242,183,5,0.25); }
+.sidebar-foot{ margin-top:14px; padding-top:14px; border-top:1px solid var(--panel-border); }
+.sidebar-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:45; opacity:0; visibility:hidden; transition:.25s; }
+.sidebar-backdrop.show{ opacity:1; visibility:visible; }
+
+/* MAIN */
+main{ margin-left:0; padding:calc(var(--header-h) + 18px) 16px 60px; transition:margin .3s; min-height:100vh; }
+.page{ display:none; animation:fadeSlide .35s ease; }
+.page.active{ display:block; }
+@keyframes fadeSlide{ from{ opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+.page-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+.page-title{ font-size:1.35rem; font-weight:700; }
+.page-sub{ color:var(--text-faint); font-size:.82rem; margin-top:2px; }
+
+/* Buttons */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:11px 18px; border-radius:12px; font-size:.85rem; font-weight:600;
+  border:1px solid var(--panel-border); background:var(--panel); color:var(--text);
+  position:relative; overflow:hidden; transition:.2s; white-space:nowrap;
+}
+.btn:hover{ background:var(--panel-strong); border-color:var(--panel-border-strong); transform:translateY(-1px); }
+.btn:active{ transform:translateY(0); }
+.btn-gold{ background:linear-gradient(135deg,var(--gold),#d99e04); color:#1a1200; border:none; box-shadow:0 8px 22px -6px rgba(242,183,5,0.55); }
+.btn-gold:hover{ filter:brightness(1.08); }
+.btn-teal{ background:linear-gradient(135deg,var(--teal),#189d8c); color:#04231f; border:none; }
+.btn-danger{ background:var(--coral-soft); color:var(--coral); border:1px solid rgba(251,106,106,0.3); }
+.btn-ghost{ background:transparent; }
+.btn-sm{ padding:7px 12px; font-size:.76rem; border-radius:9px; }
+.btn-block{ width:100%; }
+.ripple{ position:absolute; border-radius:50%; background:rgba(255,255,255,0.5); transform:scale(0); animation:rip .55s ease-out; pointer-events:none; }
+@keyframes rip{ to{ transform:scale(3); opacity:0; } }
+
+/* Grid / layout helpers */
+.grid{ display:grid; gap:16px; }
+.g4{ grid-template-columns:repeat(4,1fr); }
+.g3{ grid-template-columns:repeat(3,1fr); }
+.g2{ grid-template-columns:repeat(2,1fr); }
+@media(max-width:1100px){ .g4{ grid-template-columns:repeat(2,1fr);} .g3{ grid-template-columns:repeat(2,1fr);} }
+@media(max-width:640px){ .g4,.g3,.g2{ grid-template-columns:1fr; } }
+
+/* Stat cards */
+.stat-card{ display:flex; flex-direction:column; gap:10px; }
+.stat-top{ display:flex; align-items:center; justify-content:space-between; }
+.stat-ic{ width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:1.05rem; }
+.stat-label{ font-size:.74rem; color:var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+.stat-value{ font-family:var(--font-d); font-size:1.6rem; font-weight:700; }
+.stat-sub{ font-size:.72rem; color:var(--text-faint); }
+
+/* Progress ring (signature element) */
+.ring-wrap{ display:flex; align-items:center; gap:18px; }
+.ring{ width:96px; height:96px; border-radius:50%; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; }
+.ring::before{ content:""; position:absolute; inset:8px; border-radius:50%; background:var(--bg-2); }
+.ring-val{ position:relative; font-family:var(--font-d); font-weight:700; font-size:1.05rem; z-index:1; }
+
+/* bar chart rows */
+.bar-row{ margin-bottom:12px; }
+.bar-row-top{ display:flex; justify-content:space-between; font-size:.76rem; margin-bottom:5px; color:var(--text-dim); }
+.bar-track{ height:9px; border-radius:6px; background:rgba(255,255,255,0.06); overflow:hidden; }
+.bar-fill{ height:100%; border-radius:6px; background:linear-gradient(90deg,var(--teal),var(--gold)); transition:width .6s cubic-bezier(.4,0,.2,1); }
+
+/* month bars (monthly collection) */
+.month-chart{ display:flex; align-items:flex-end; gap:8px; height:120px; padding-top:10px; }
+.month-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:6px; height:100%; }
+.month-bar{ width:100%; max-width:26px; border-radius:6px 6px 3px 3px; background:linear-gradient(180deg,var(--gold),rgba(242,183,5,0.25)); transition:height .6s cubic-bezier(.4,0,.2,1); min-height:3px; }
+.month-lbl{ font-size:.63rem; color:var(--text-faint); }
+
+/* Sections */
+.section-title{ font-size:.95rem; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.list-empty{ padding:34px 14px; text-align:center; color:var(--text-faint); font-size:.85rem; }
+.list-empty .em-ic{ font-size:1.8rem; display:block; margin-bottom:8px; }
+
+/* Recent list rows */
+.row-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 4px; border-bottom:1px solid var(--panel-border); font-size:.82rem; }
+.row-item:last-child{ border-bottom:none; }
+.row-item-l{ display:flex; align-items:center; gap:10px; min-width:0; }
+.row-ic{ width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:.9rem; }
+.truncate{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* Chips */
+.chip{ display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:.68rem; font-weight:700; letter-spacing:.02em; }
+.chip-green{ background:var(--teal-soft); color:var(--teal); }
+.chip-orange{ background:var(--amber-soft); color:var(--amber); }
+.chip-red{ background:var(--coral-soft); color:var(--coral); }
+.chip-gray{ background:var(--panel-strong); color:var(--text-dim); }
+
+/* Subject cards */
+.subject-card{ display:flex; flex-direction:column; gap:12px; }
+.subj-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.subj-name{ font-family:var(--font-d); font-weight:700; font-size:1.05rem; }
+.subj-teacher{ font-size:.76rem; color:var(--text-faint); margin-top:1px; }
+.subj-meta{ display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:.74rem; }
+.subj-meta div span{ display:block; color:var(--text-faint); font-size:.66rem; text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px; }
+.days-row{ display:flex; flex-wrap:wrap; gap:5px; }
+.day-pill{ font-size:.63rem; padding:3px 7px; border-radius:6px; background:var(--panel-strong); color:var(--text-dim); }
+.subj-actions{ display:flex; gap:8px; margin-top:2px; }
+
+/* Search/filter bar */
+.toolbar{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+.input, select.input, .textarea{
+  padding:11px 14px; border-radius:12px; background:var(--panel); border:1px solid var(--panel-border);
+  color:var(--text); font-size:.84rem; width:100%; transition:.2s;
+}
+.input:focus, select.input:focus, .textarea:focus{ background:var(--panel-strong); border-color:var(--gold); }
+.textarea{ resize:vertical; min-height:70px; }
+.search-wrap{ position:relative; flex:1; min-width:180px; }
+.search-wrap .input{ padding-left:36px; }
+.search-ic{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-faint); font-size:.85rem; }
+.field{ margin-bottom:14px; }
+.field label{ display:block; font-size:.74rem; color:var(--text-dim); margin-bottom:6px; font-weight:600; }
+.field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:520px){ .field-row{ grid-template-columns:1fr; } }
+
+/* Table */
+.table-wrap{ overflow-x:auto; }
+table.data{ width:100%; border-collapse:collapse; font-size:.82rem; min-width:640px; }
+table.data th{ text-align:left; padding:10px 12px; color:var(--text-faint); font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--panel-border); cursor:pointer; user-select:none; }
+table.data td{ padding:12px; border-bottom:1px solid var(--panel-border); }
+table.data tr:hover td{ background:var(--panel); }
+
+/* Modal */
+.modal-overlay{
+  position:fixed; inset:0; z-index:100; display:flex; align-items:flex-end; justify-content:center;
+  background:rgba(5,7,13,0.65); backdrop-filter:blur(4px);
+  opacity:0; visibility:hidden; transition:.25s;
+}
+.modal-overlay.open{ opacity:1; visibility:visible; }
+.modal-box{
+  width:100%; max-width:520px; max-height:88vh; overflow-y:auto;
+  border-radius:22px 22px 0 0; padding:22px 20px 26px;
+  transform:translateY(30px); transition:.3s cubic-bezier(.4,0,.2,1);
+  background:linear-gradient(180deg, rgba(20,25,40,0.97), rgba(10,13,22,0.99));
+  border:1px solid var(--panel-border-strong); border-bottom:none;
+}
+.modal-overlay.open .modal-box{ transform:translateY(0); }
+@media(min-width:640px){
+  .modal-overlay{ align-items:center; }
+  .modal-box{ border-radius:22px; border-bottom:1px solid var(--panel-border-strong); transform:translateY(10px) scale(.97); }
+}
+.modal-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.modal-title{ font-size:1.05rem; font-weight:700; }
+.close-x{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--panel); border:1px solid var(--panel-border); }
+.checkbox-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+@media(max-width:420px){ .checkbox-grid{ grid-template-columns:repeat(3,1fr);} }
+.check-pill{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:9px 4px; border-radius:11px; background:var(--panel); border:1px solid var(--panel-border); font-size:.68rem; cursor:pointer; transition:.15s; }
+.check-pill.checked{ background:var(--gold-soft); border-color:rgba(242,183,5,0.4); color:var(--gold); }
+.check-pill input{ display:none; }
+.month-check-list{ display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; padding-right:4px; }
+.month-check-item{ display:flex; align-items:center; justify-content:space-between; padding:11px 13px; border-radius:12px; background:var(--panel); border:1px solid var(--panel-border); cursor:pointer; }
+.month-check-item.checked{ border-color:rgba(242,183,5,0.4); background:var(--gold-soft); }
+.modal-foot{ display:flex; gap:10px; margin-top:18px; }
+
+/* Toast */
+#toast-stack{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:200; display:flex; flex-direction:column; gap:10px; width:min(360px,92vw); }
+.toast{
+  padding:13px 16px; border-radius:14px; font-size:.82rem; font-weight:600; display:flex; align-items:center; gap:10px;
+  background:rgba(15,19,30,0.95); border:1px solid var(--panel-border-strong); box-shadow:var(--shadow-lg);
+  animation:toastIn .3s cubic-bezier(.4,0,.2,1);
+}
+@keyframes toastIn{ from{ opacity:0; transform:translateY(14px) scale(.95);} to{opacity:1; transform:translateY(0) scale(1);} }
+.toast.out{ animation:toastOut .25s ease forwards; }
+@keyframes toastOut{ to{ opacity:0; transform:translateY(10px) scale(.95);} }
+.toast-ic{ font-size:1.05rem; }
+.toast.success{ border-left:3px solid var(--teal); }
+.toast.error{ border-left:3px solid var(--coral); }
+.toast.info{ border-left:3px solid var(--gold); }
+
+/* Empty state */
+.empty-state{ text-align:center; padding:50px 20px; }
+.empty-ic{ font-size:2.4rem; margin-bottom:12px; opacity:.7; }
+.empty-title{ font-weight:700; margin-bottom:4px; }
+.empty-sub{ color:var(--text-faint); font-size:.82rem; margin-bottom:16px; }
+
+/* Receipt */
+.receipt-tabs{ display:flex; gap:8px; margin-bottom:16px; }
+.tab-btn{ padding:9px 16px; border-radius:11px; font-size:.8rem; font-weight:600; background:var(--panel); border:1px solid var(--panel-border); color:var(--text-dim); }
+.tab-btn.active{ background:var(--gold-soft); color:var(--gold); border-color:rgba(242,183,5,0.35); }
+.receipt-preview{ padding:26px; background:linear-gradient(160deg,#fdfaf1,#fff); color:#20180a; border-radius:18px; font-family:var(--font-b); position:relative; overflow:hidden; }
+.receipt-preview::before{ content:""; position:absolute; inset:0; border:2px solid #f2b70555; border-radius:18px; pointer-events:none; margin:6px; }
+.rc-head{ display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px dashed #e4d7ad; padding-bottom:14px; margin-bottom:14px; }
+.rc-logo{ font-family:var(--font-d); font-weight:700; font-size:1.2rem; color:#8a6400; }
+.rc-logo small{ display:block; font-weight:500; font-size:.62rem; color:#8a7a4c; letter-spacing:.05em; }
+.rc-num{ font-family:var(--font-m); font-size:.78rem; text-align:right; color:#4a4030; }
+.rc-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:.78rem; margin-bottom:14px; }
+.rc-grid div span{ display:block; color:#8a7a4c; font-size:.65rem; text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px; }
+table.rc-table{ width:100%; border-collapse:collapse; font-size:.8rem; margin-bottom:14px; }
+table.rc-table th{ text-align:left; background:#f7edcc; padding:8px 10px; font-size:.68rem; text-transform:uppercase; letter-spacing:.04em; color:#6b5b28; }
+table.rc-table td{ padding:8px 10px; border-bottom:1px solid #eee1bd; }
+.rc-total-row td{ font-weight:700; }
+.rc-foot{ text-align:center; font-size:.68rem; color:#a3946a; border-top:1px dashed #e4d7ad; padding-top:10px; }
+
+/* Loader */
+.loader-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--gold); animation:pulse 1s infinite ease-in-out; }
+@keyframes pulse{ 0%,100%{ opacity:.3; transform:scale(.8);} 50%{ opacity:1; transform:scale(1.1);} }
+
+/* Confirm dialog reuses modal */
+.confirm-icon{ width:52px; height:52px; border-radius:14px; background:var(--coral-soft); color:var(--coral); display:flex; align-items:center; justify-content:center; font-size:1.4rem; margin:0 auto 14px; }
+
+/* Developer / about */
+.profile-hero{ text-align:center; padding:36px 20px; }
+.dev-avatar{ width:100px; height:100px; border-radius:28px; margin:0 auto 16px; background:linear-gradient(135deg,var(--gold),var(--teal)); display:flex; align-items:center; justify-content:center; font-family:var(--font-d); font-size:2rem; font-weight:700; color:#0a0e1a; animation:floaty 4s ease-in-out infinite; }
+@keyframes floaty{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-8px);} }
+.skill-tag{ display:inline-block; padding:6px 13px; border-radius:20px; background:var(--panel); border:1px solid var(--panel-border); font-size:.74rem; margin:4px; }
+.social-row{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
+
+/* Desktop layout */
+@media(min-width:900px){
+  .sidebar{ transform:none !important; }
+  main{ margin-left:var(--sidebar-w); }
+  .sidebar-backdrop{ display:none; }
+  .clock-wrap{ display:block; }
+  .profile-name{ display:block; }
+  .hamburger{ display:none; }
+}
+@media(max-width:899px){
+  .sidebar{ transform:translateX(-100%); box-shadow:0 0 60px rgba(0,0,0,0.5); }
+  .sidebar.open{ transform:translateX(0); }
+}
+.portfolio-footer{
+    margin-top:70px;
+    padding:45px 20px;
+    text-align:center;
+    background:linear-gradient(180deg,#111,#070707);
+    border-top:1px solid rgba(212,175,55,.25);
+}
+
+.footer-logo a{
+    text-decoration:none;
+    color:#d4af37;
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    transition:.35s;
+    text-shadow:
+        0 0 6px rgba(212,175,55,.4),
+        0 0 14px rgba(212,175,55,.25);
+}
+
+.footer-logo a:hover{
+    color:#fff;
+    text-shadow:
+        0 0 10px #d4af37,
+        0 0 22px #d4af37,
+        0 0 35px #d4af37;
+    letter-spacing:5px;
+}
+
+.footer-tagline{
+    margin-top:14px;
+    color:#9d9d9d;
+    font-size:14px;
+    font-style:italic;
+}
+
+.footer-line{
+    width:80px;
+    height:3px;
+    margin:22px auto;
+    background:#d4af37;
+    border-radius:50px;
+    box-shadow:0 0 12px #d4af37;
+}
+
+.footer-copy{
+    color:#777;
+    font-size:13px;
+    letter-spacing:2px;
+}
+.rel{
+    position:relative;
+}
+
+.dropdown{
+    position:absolute;
+    top:48px;
+    right:0;
+    display:none;
+    z-index:9999;
+}
+
+.dropdown.open{
+    display:block;
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ HEADER ============ -->
+<!-- =========================
+     TOP HEADER
+========================== -->
+<header class="topbar">
+
+    <!-- Left -->
+<div class="hdr-left">
+
+    <button class="icon-btn hamburger" id="btnHamburger">
+        ☰
+    </button>
+
+    <div class="brand-wrap">
+
+<img src="paypico.png" class="logo-img" alt="EduPay Pico">
+
+        <div class="brand-info">
+
+            <h1 class="brand-title">
+                EduPay <span>PICO</span>
+            </h1>
+
+            <p class="brand-sub">
+                Smart Coaching Payment Manager
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+    <!-- Right -->
+    <div class="hdr-right">
+
+        <div class="clock-wrap">
+            <div class="clock-time" id="clockTime">--:--</div>
+            <div class="clock-date" id="clockDate">-- --- ----</div>
+        </div>
+
+        <div class="rel">
+            <button class="icon-btn notif-btn" id="btnNotif">
+                🔔
+                <span class="badge-dot" id="notifDot"></span>
+            </button>
+
+            <div class="dropdown glass" id="notifDropdown">
+                <div class="dropdown-head">Notifications</div>
+                <div id="notifList">
+                    <div class="dropdown-empty">
+                        No notifications.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rel">
+
+            <button class="profile-chip" id="btnProfile">
+
+                <div class="avatar" id="avatarInit">
+                    S
+                </div>
+
+                <div class="profile-info">
+                    <span class="profile-name" id="profileNameTxt">
+                        Student
+                    </span>
+
+                    <small>Active</small>
+                </div>
+
+            </button>
+
+            <div class="dropdown glass" id="profileDropdown">
+
+                <button class="dropdown-item" id="miEditName">
+                    ✏️ Edit Name
+                </button>
+
+                <button class="dropdown-item" id="miAbout">
+                    ℹ️ About
+                </button>
+
+                <button class="dropdown-item danger" id="miLogout">
+                    🚪 Logout
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</header>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- ============ SIDEBAR ============ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="nav-item active" data-page="dashboard"><span class="ic">📊</span> Dashboard</div>
+    <div class="nav-item" data-page="subjects"><span class="ic">📚</span> Subjects</div>
+    <div class="nav-item" data-page="payment"><span class="ic">💳</span> Payment</div>
+    <div class="nav-item" data-page="status"><span class="ic">📋</span> Status</div>
+    <div class="nav-item" data-page="receipt"><span class="ic">🧾</span> Receipt</div>
+    <div class="nav-item" data-page="about"><span class="ic">ℹ️</span> About</div>
+    <div class="nav-item" data-page="developer"><span class="ic">👨‍💻</span> Developer</div>
+    <div class="sidebar-foot">
+      <div class="nav-item" id="navLogout"><span class="ic">🚪</span> Logout</div>
+    </div>
+  </nav>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+
+    <!-- ---------------- DASHBOARD ---------------- -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Welcome back 👋</div>
+          <div class="page-sub" id="dashSubtitle">Here's your coaching payment overview.</div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-gold" data-action="quick-add-subject">➕ Add Subject</button>
+          <button class="btn" data-action="quick-pay">💳 Pay Now</button>
+          <button class="btn" data-action="quick-receipt">🧾 Generate Receipt</button>
+        </div>
+      </div>
+
+      <div class="grid g4" style="margin-bottom:16px;">
+        <div class="glass card stat-card">
+          <div class="stat-top"><span class="stat-label">Available Subjects</span><div class="stat-ic" style="background:var(--teal-soft); color:var(--teal);">📚</div></div>
+          <div class="stat-value" id="statSubjects">0</div>
+          <div class="stat-sub">Active coaching subjects</div>
+        </div>
+        <div class="glass card stat-card">
+          <div class="stat-top"><span class="stat-label">Overall Payment</span><div class="stat-ic" style="background:var(--gold-soft); color:var(--gold);">💰</div></div>
+          <div class="stat-value" id="statOverall">৳0</div>
+          <div class="stat-sub">Total billed to date</div>
+        </div>
+        <div class="glass card stat-card">
+          <div class="stat-top"><span class="stat-label">Overall Due</span><div class="stat-ic" style="background:var(--coral-soft); color:var(--coral);">⏳</div></div>
+          <div class="stat-value" id="statDue">৳0</div>
+          <div class="stat-sub">Pending across subjects</div>
+        </div>
+        <div class="glass card stat-card">
+          <div class="stat-top"><span class="stat-label">Overall Paid</span><div class="stat-ic" style="background:var(--teal-soft); color:var(--teal);">✅</div></div>
+          <div class="stat-value" id="statPaid">৳0</div>
+          <div class="stat-sub">Successfully settled</div>
+        </div>
+      </div>
+
+      <div class="grid g3" style="margin-bottom:16px; align-items:start;">
+        <div class="glass card">
+          <div class="section-title">🌀 Payment Progress</div>
+          <div class="ring-wrap">
+            <div class="ring" id="progressRing"><span class="ring-val" id="progressVal">0%</span></div>
+            <div>
+              <div style="font-size:.78rem; color:var(--text-dim);">of total billed amount has been collected across all active subjects.</div>
+            </div>
+          </div>
+        </div>
+        <div class="glass card">
+          <div class="section-title">📈 Subject Wise Summary</div>
+          <div id="subjectBars"><div class="list-empty"><span class="em-ic">📭</span>No subjects yet</div></div>
+        </div>
+        <div class="glass card">
+          <div class="section-title">📅 Monthly Collection</div>
+          <div class="month-chart" id="monthChart"></div>
+        </div>
+      </div>
+
+      <div class="grid g3">
+        <div class="glass card">
+          <div class="section-title">🕑 Recent Payment</div>
+          <div id="recentPayments"><div class="list-empty"><span class="em-ic">💤</span>No payments yet</div></div>
+        </div>
+        <div class="glass card">
+          <div class="section-title">⚡ Recent Activity</div>
+          <div id="recentActivity"><div class="list-empty"><span class="em-ic">🗒️</span>No activity yet</div></div>
+        </div>
+        <div class="glass card">
+          <div class="section-title">🔔 Upcoming Due</div>
+          <div id="upcomingDue"><div class="list-empty"><span class="em-ic">🎉</span>All caught up</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- SUBJECTS ---------------- -->
+    <section class="page" id="page-subjects">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Subjects</div>
+          <div class="page-sub">Manage your coaching subjects &amp; teachers.</div>
+        </div>
+        <button class="btn btn-gold" id="btnAddSubject">➕ Add Subject</button>
+      </div>
+      <div class="toolbar">
+        <div class="search-wrap"><span class="search-ic">🔍</span><input class="input" id="subjSearch" placeholder="Search subject or teacher..."></div>
+        <select class="input" id="subjFilterStatus" style="max-width:170px;">
+          <option value="">All Status</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="grid g3" id="subjectList"></div>
+    </section>
+
+    <!-- ---------------- PAYMENT ---------------- -->
+    <section class="page" id="page-payment">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Payment</div>
+          <div class="page-sub">Select a subject and settle unpaid months.</div>
+        </div>
+      </div>
+      <div class="glass card" style="max-width:640px; margin-bottom:16px;">
+        <div class="field">
+          <label>Select Subject</label>
+          <select class="input" id="paySubjectSelect"><option value="">-- choose subject --</option></select>
+        </div>
+        <div id="payDetails" style="display:none;">
+          <div class="grid g2" style="margin-bottom:14px;">
+            <div class="glass card" style="padding:14px;">
+              <div class="stat-label">Teacher</div>
+              <div style="font-weight:700; margin-top:4px;" id="payTeacher">-</div>
+            </div>
+            <div class="glass card" style="padding:14px;">
+              <div class="stat-label">Monthly Salary</div>
+              <div style="font-weight:700; margin-top:4px;" id="paySalary">-</div>
+            </div>
+            <div class="glass card" style="padding:14px;">
+              <div class="stat-label">Paid Months</div>
+              <div style="font-weight:700; margin-top:4px;" id="payPaidCount">-</div>
+            </div>
+            <div class="glass card" style="padding:14px;">
+              <div class="stat-label">Due Months</div>
+              <div style="font-weight:700; margin-top:4px; color:var(--coral);" id="payDueCount">-</div>
+            </div>
+          </div>
+          <div class="field"><label>Current Running Month</label><div class="chip chip-gray" id="payCurrentMonth">-</div></div>
+<div class="field">
+    <label>Month Select to Pay</label>
+    <div class="month-check-list" id="payMonthList"></div>
+</div>
+
+<div class="field-row">
+            <div class="field"><label>Payment Date</label><input type="date" class="input" id="payDate"></div>
+            <div class="field"><label>Payment Method</label>
+              <select class="input" id="payMethod"><option>Cash</option><option>Bank Transfer</option><option>Mobile Banking</option><option>Card</option></select>
+            </div>
+          </div>
+          <div class="field"><label>Notes (optional)</label><textarea class="textarea" id="payNotes" placeholder="Add a note..."></textarea></div>
+          <div class="glass card" style="padding:14px; display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <span class="stat-label">Total Amount</span>
+            <span class="stat-value" style="font-size:1.3rem;" id="payAmount">৳0</span>
+          </div>
+          <button class="btn btn-gold btn-block" id="btnConfirmPay">✅ Confirm Payment</button>
+        </div>
+    </section>
+
+    <!-- ---------------- STATUS ---------------- -->
+    <section class="page" id="page-status">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Status</div>
+          <div class="page-sub">Payment status across all subjects.</div>
+        </div>
+      </div>
+      <div class="grid g2" style="margin-bottom:16px;">
+        <div class="glass card stat-card"><div class="stat-label">Total Paid</div><div class="stat-value" id="statusTotalPaid" style="color:var(--teal);">৳0</div></div>
+        <div class="glass card stat-card"><div class="stat-label">Total Due</div><div class="stat-value" id="statusTotalDue" style="color:var(--coral);">৳0</div></div>
+      </div>
+      <div class="toolbar">
+        <div class="search-wrap"><span class="search-ic">🔍</span><input class="input" id="statusSearch" placeholder="Search subject or teacher..."></div>
+        <select class="input" id="statusFilter" style="max-width:160px;">
+          <option value="">All</option>
+          <option value="Paid">Paid</option>
+          <option value="Partial">Partial</option>
+          <option value="Due">Due</option>
+        </select>
+      </div>
+      <div class="glass card table-wrap">
+        <table class="data" id="statusTable">
+          <thead><tr>
+            <th data-sort="name">Subject</th><th data-sort="teacher">Teacher</th><th data-sort="salary">Salary</th>
+            <th data-sort="paid">Paid</th><th data-sort="due">Due</th><th>Current Month</th><th>Status</th>
+          </tr></thead>
+          <tbody id="statusBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------------- RECEIPT ---------------- -->
+    <section class="page" id="page-receipt">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Receipt</div>
+          <div class="page-sub">Generate subject-wise or overall receipts.</div>
+        </div>
+      </div>
+      <div class="receipt-tabs">
+        <button class="tab-btn active" data-rtab="subject">Subject Wise</button>
+        <button class="tab-btn" data-rtab="overall">Overall</button>
+        <button class="tab-btn" data-rtab="history">History</button>
+      </div>
+
+      <div id="rtab-subject">
+        <div class="glass card" style="max-width:520px; margin-bottom:16px;">
+          <div class="field"><label>Select Subject</label><select class="input" id="rcSubjectSelect"><option value="">-- choose subject --</option></select></div>
+          <div class="field"><label>Select Payment Record</label><select class="input" id="rcPaymentSelect"><option value="">-- choose payment --</option></select></div>
+          <button class="btn btn-gold btn-block" id="btnGenSubjectReceipt">🧾 Generate Receipt</button>
+        </div>
+      </div>
+      <div id="rtab-overall" style="display:none;">
+        <div class="glass card" style="max-width:520px; margin-bottom:16px;">
+          <p style="font-size:.82rem; color:var(--text-dim); margin-bottom:14px;">Generates a consolidated receipt covering every subject's paid &amp; due amount as of today.</p>
+          <button class="btn btn-gold btn-block" id="btnGenOverallReceipt">🧾 Generate Overall Receipt</button>
+        </div>
+      </div>
+      <div id="rtab-history" style="display:none;">
+        <div id="receiptHistory" class="grid g3"></div>
+      </div>
+
+      <div id="receiptPreviewWrap" style="display:none; max-width:560px;">
+        <div class="receipt-preview" id="receiptPreview"></div>
+        <div style="display:flex; gap:10px; margin-top:14px;">
+          <button class="btn btn-gold" id="btnDownloadPdf">⬇️ Download PDF</button>
+          <button class="btn" id="btnPrintReceipt">🖨️ Print</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- ABOUT ---------------- -->
+    <section class="page" id="page-about">
+      <div class="page-head"><div><div class="page-title">About EduPay Pico</div><div class="page-sub">Smart Coaching Payment Manager</div></div></div>
+      <div class="grid g2">
+        <div class="glass card">
+          <div class="section-title">📦 Version</div>
+          <p style="font-size:.85rem; color:var(--text-dim);">EduPay Pico v1.0.0 — a fully offline-first, single-file payment manager for coaching centers.</p>
+        </div>
+        <div class="glass card">
+          <div class="section-title">🎯 Purpose</div>
+          <p style="font-size:.85rem; color:var(--text-dim);">Helps students and guardians track subject-wise coaching fees, monthly dues, and generate professional receipts — all stored locally on your device.</p>
+        </div>
+        <div class="glass card">
+          <div class="section-title">✨ Features</div>
+          <div class="days-row">
+            <span class="day-pill">Subject Manager</span><span class="day-pill">Auto Due Tracking</span>
+            <span class="day-pill">Receipts</span><span class="day-pill">PDF Export</span>
+            <span class="day-pill">Backups</span><span class="day-pill">Live Search</span>
+          </div>
+        </div>
+        <div class="glass card">
+          <div class="section-title">📖 How To Use</div>
+          <p style="font-size:.85rem; color:var(--text-dim);">1. Add a subject with schedule &amp; fee. 2. Visit Payment to settle due months. 3. Generate a receipt anytime from the Receipt page.</p>
+        </div>
+      </div>
+      <div class="glass card" style="margin-top:16px;">
+        <div class="section-title">🔗 Links</div>
+        <div class="social-row">
+          <a class="btn btn-sm" href="#" onclick="return false;">📘 Facebook</a>
+          <a class="btn btn-sm" href="#" onclick="return false;">💻 GitHub</a>
+          <a class="btn btn-sm" href="mailto:hello@edupaypico.app">✉️ Email</a>
+          <a class="btn btn-sm" href="#" onclick="return false;">🌐 Website</a>
+        </div>
+      </div>
+      <div class="glass card" style="margin-top:16px;">
+        <div class="section-title">💾 Data Management</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn" id="btnExportJson">⬇️ Download JSON Backup</button>
+          <button class="btn" id="btnImportJsonTrigger">⬆️ Import JSON</button>
+          <input type="file" id="importFileInput" accept=".json" style="display:none;">
+          <button class="btn btn-danger" id="btnResetDb">🗑️ Reset Database</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- DEVELOPER ---------------- -->
+<section class="page" id="page-developer">
+
+<div class="glass card" style="padding:28px;overflow:hidden;">
+
+    <div style="font-size:12px;
+    letter-spacing:4px;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin-bottom:8px;">
+        Established 2026
+    </div>
+
+    <div style="font-size:12px;
+    color:var(--text-faint);
+    letter-spacing:3px;
+    margin-bottom:45px;">
+        MD. MOSHIUR RAHMAN
+    </div>
+
+    <h1 style="
+    font-size:42px;
+    line-height:1.1;
+    margin-bottom:25px;
+    font-family:var(--font-d);
+    color:#f4d88a;">
+        MD. Moshiur<br>Rahman
+    </h1>
+
+    <div style="
+    border-left:4px solid var(--gold);
+    padding-left:15px;
+    margin-bottom:28px;">
+
+        <h3>Student</h3>
+        <h3>Frontend Web Developer</h3>
+        <h3>UI Designer</h3>
+
+    </div>
+
+    <p style="
+    color:var(--text-dim);
+    line-height:1.8;
+    margin-bottom:40px;">
+
+        "I enjoy creating elegant websites with clean interfaces and smooth user experiences.
+        Every project is built with creativity, attention to detail, and a passion for modern web design."
+
+    </p>
+
+<a href="https://moshiur-port.netlify.app/" class="btn btn-gold btn-block">
+    🚀 Explore My Portfolio
+</a>
+</div>
+
+<div class="grid g2" style="margin-top:20px;">
+
+<div class="glass card">
+<h3>Skills</h3>
+<div class="days-row" style="margin-top:15px;">
+<span class="day-pill">HTML5</span>
+<span class="day-pill">CSS3</span>
+<span class="day-pill">JavaScript</span>
+<span class="day-pill">Firebase</span>
+<span class="day-pill">UI/UX</span>
+<span class="day-pill">Responsive Design</span>
+</div>
+</div>
+
+<div class="glass card">
+<h3>Projects</h3>
+
+<div class="row-item">
+<span>💳 EduPay Pico</span>
+<span>v1.0</span>
+</div>
+
+<div class="row-item">
+<span>📚 GolpoX</span>
+<span>Live</span>
+</div>
+
+<div class="row-item">
+<span>🌐 Portfolio</span>
+<span>2026</span>
+</div>
+
+</div>
+
+<div class="glass card">
+<h3>Social</h3>
+
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:15px;">
+
+<button class="btn btn-sm">🌐 Portfolio</button>
+
+<button class="btn btn-sm">📘 Facebook</button>
+
+<button class="btn btn-sm">💻 GitHub</button>
+
+<button class="btn btn-sm">✉️ Email</button>
+
+</div>
+
+</div>
+
+<div class="glass card">
+
+<h3>About Developer</h3>
+
+<p style="margin-top:15px;color:var(--text-dim);line-height:1.8;">
+
+Frontend developer passionate about creating premium web applications with modern UI, smooth animations and clean architecture.
+
+</p>
+
+</div>
+
+</div>
+
+</section>
+
+  </main>
+</div>
+
+<!-- ============ MODAL: ADD/EDIT SUBJECT ============ -->
+<div class="modal-overlay" id="subjectModal">
+  <div class="modal-box glass">
+    <div class="modal-head"><div class="modal-title" id="subjectModalTitle">Add Subject</div><div class="close-x" data-close="subjectModal">✕</div></div>
+    <input type="hidden" id="subjEditId">
+    <div class="field"><label>Subject Name</label><input class="input" id="subjName" placeholder="e.g. Physics"></div>
+    <div class="field"><label>Teacher Name</label><input class="input" id="subjTeacher" placeholder="e.g. Mr. Karim"></div>
+    <div class="field"><label>Monthly Salary (৳)</label><input type="number" class="input" id="subjSalary" placeholder="e.g. 1500" min="0"></div>
+    <div class="field">
+      <label>Select Days</label>
+      <div class="checkbox-grid" id="dayCheckboxes"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Start Time</label><input type="time" class="input" id="subjStart"></div>
+      <div class="field"><label>End Time</label><input type="time" class="input" id="subjEnd"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Start Month</label><select class="input" id="subjStartMonth"></select></div>
+      <div class="field"><label>Start Year</label><select class="input" id="subjStartYear"></select></div>
+    </div>
+    <button class="btn btn-sm" id="btnAutoGenDate" style="margin-bottom:14px;">⚡ Auto Generate (Current Month/Year)</button>
+    <div class="field">
+      <label>Status</label>
+      <select class="input" id="subjStatus"><option>Active</option><option>Inactive</option></select>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-block" data-close="subjectModal">Cancel</button>
+      <button class="btn btn-gold btn-block" id="btnSaveSubject">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: CONFIRM ============ -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box glass" style="max-width:380px; text-align:center;">
+    <div class="confirm-icon">⚠️</div>
+    <div class="modal-title" id="confirmTitle" style="margin-bottom:6px;">Are you sure?</div>
+    <p style="font-size:.82rem; color:var(--text-dim); margin-bottom:18px;" id="confirmMsg">This action cannot be undone.</p>
+    <div class="modal-foot">
+      <button class="btn btn-block" data-close="confirmModal">Cancel</button>
+      <button class="btn btn-danger btn-block" id="btnConfirmYes">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: EDIT NAME ============ -->
+<div class="modal-overlay" id="nameModal">
+  <div class="modal-box glass" style="max-width:380px;">
+    <div class="modal-head"><div class="modal-title">Edit Your Name</div><div class="close-x" data-close="nameModal">✕</div></div>
+    <div class="field"><label>Student Name</label><input class="input" id="studentNameInput" placeholder="Your name"></div>
+    <div class="modal-foot">
+      <button class="btn btn-block" data-close="nameModal">Cancel</button>
+      <button class="btn btn-gold btn-block" id="btnSaveName">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-stack"></div>
+
+<script>
+
+const DB_KEYS = { subjects:'edupay_subjects', payments:'edupay_payments', receipts:'edupay_receipts', settings:'edupay_settings', activity:'edupay_activity' };
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_NAMES = ['Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'];
+
+function loadDB(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
+function saveDB(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+let STATE = {
+  subjects: loadDB(DB_KEYS.subjects, []),
+  payments: loadDB(DB_KEYS.payments, []),
+  receipts: loadDB(DB_KEYS.receipts, []),
+  activity: loadDB(DB_KEYS.activity, []),
+  settings: loadDB(DB_KEYS.settings, { studentName:'Student', nextSR:1, nextOR:1 })
+};
+function persist(part){
+  if(part==='subjects') saveDB(DB_KEYS.subjects, STATE.subjects);
+  if(part==='payments') saveDB(DB_KEYS.payments, STATE.payments);
+  if(part==='receipts') saveDB(DB_KEYS.receipts, STATE.receipts);
+  if(part==='activity') saveDB(DB_KEYS.activity, STATE.activity);
+  if(part==='settings') saveDB(DB_KEYS.settings, STATE.settings);
+}
+function logActivity(text, icon){
+  STATE.activity.unshift({ id:uid(), text, icon:icon||'⚡', ts:Date.now() });
+  STATE.activity = STATE.activity.slice(0,30);
+  persist('activity');
+}
+
+/* ---------- 2. UTILS ---------- */
+function uid(){ return 'id_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function money(n){ return '৳'+Number(n||0).toLocaleString('en-IN'); }
+function pad(n,len){ return String(n).padStart(len,'0'); }
+function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1,2)+'-'+pad(d.getDate(),2); }
+function to12Hour(t){ // t = "HH:MM"
+  if(!t) return '-';
+  let [h,m] = t.split(':').map(Number);
+  const ampm = h>=12 ? 'PM':'AM';
+  h = h%12; if(h===0) h=12;
+  return h+':'+pad(m,2)+' '+ampm;
+}
+function timeAgo(ts){
+  const s = Math.floor((Date.now()-ts)/1000);
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function monthKey(m,y){ return y+'-'+pad(m,2); }
+function monthLabel(m,y){ return MONTH_NAMES[m-1]+' '+y; }
+function getMonthsBetween(startM,startY,endM,endY){
+  const out=[];
+  let m=startM, y=startY;
+  let guard=0;
+  while((y<endY || (y===endY && m<=endM)) && guard<600){
+    out.push({m,y});
+    m++; if(m>12){ m=1; y++; }
+    guard++;
+  }
+  return out;
+}
+function ripple(e, el){
+  const r = document.createElement('span'); r.className='ripple';
+  const rect = el.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  r.style.width = r.style.height = size+'px';
+  r.style.left = (e.clientX - rect.left - size/2)+'px';
+  r.style.top = (e.clientY - rect.top - size/2)+'px';
+  el.appendChild(r);
+  setTimeout(()=>r.remove(), 550);
+}
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('.btn, .icon-btn, .day-pill-btn, .tab-btn');
+  if(btn){ btn.style.position = btn.style.position || 'relative'; btn.style.overflow='hidden'; ripple(e, btn); }
+});
+
+/* Toast */
+function toast(msg, type, icon){
+  type = type || 'info';
+  const el = document.createElement('div');
+  el.className = 'toast '+type;
+  el.innerHTML = `<span class="toast-ic">${icon || (type==='success'?'✅':type==='error'?'⚠️':'ℹ️')}</span><span>${msg}</span>`;
+  document.getElementById('toast-stack').appendChild(el);
+  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(),260); }, 3200);
+}
+
+/* ---------- 3. HEADER: CLOCK ---------- */
+function tickClock(){
+  const d = new Date();
+  let h = d.getHours(); const m=d.getMinutes(), s=d.getSeconds();
+  const ampm = h>=12?'PM':'AM'; h = h%12; if(h===0) h=12;
+  document.getElementById('clockTime').textContent = `${h}:${pad(m,2)}:${pad(s,2)} ${ampm}`;
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const mons=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('clockDate').textContent = `${days[d.getDay()]}, ${d.getDate()} ${mons[d.getMonth()]} ${d.getFullYear()}`;
+}
+setInterval(tickClock,1000); tickClock();
+
+/* Notification & profile dropdowns */
+function toggleDropdown(id){
+  const el = document.getElementById(id);
+  document.querySelectorAll('.dropdown').forEach(dd=>{ if(dd.id!==id) dd.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+document.getElementById('btnNotif').addEventListener('click', e=>{ e.stopPropagation(); toggleDropdown('notifDropdown'); });
+document.getElementById('btnProfile').addEventListener('click', e=>{ e.stopPropagation(); toggleDropdown('profileDropdown'); });
+document.addEventListener('click', ()=>{ document.querySelectorAll('.dropdown').forEach(dd=>dd.classList.remove('open')); });
+
+function renderNotifications(){
+  const list = document.getElementById('notifList');
+  const items = STATE.activity.slice(0,6);
+  document.getElementById('notifDot').classList.toggle('show', items.length>0);
+  if(!items.length){ list.innerHTML = '<div class="list-empty" style="padding:16px;">No notifications</div>'; return; }
+  list.innerHTML = items.map(a=>`<div class="notif-item">${a.icon} ${a.text}<div class="notif-time">${timeAgo(a.ts)}</div></div>`).join('');
+}
+
+/* ---------- 4. NAVIGATION ---------- */
+function goPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item[data-page]').forEach(n=>n.classList.toggle('active', n.dataset.page===page));
+  closeSidebar();
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(page==='dashboard') renderDashboard();
+  if(page==='subjects') renderSubjects();
+  if(page==='payment') renderPaymentSubjectOptions();
+  if(page==='status') renderStatus();
+  if(page==='receipt') renderReceiptOptions();
+}
+document.querySelectorAll('.nav-item[data-page]').forEach(n=>n.addEventListener('click', ()=>goPage(n.dataset.page)));
+
+function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarBackdrop').classList.add('show'); }
+function closeSidebar(){ if(window.innerWidth<900){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('show'); } }
+document.getElementById('btnHamburger').addEventListener('click', ()=>{
+  document.getElementById('sidebar').classList.contains('open') ? closeSidebar() : openSidebar();
+});
+document.getElementById('sidebarBackdrop').addEventListener('click', closeSidebar);
+
+/* Logout (just a friendly reset-view action, no real auth) */
+function doLogout(){
+  toast('Logged out. See you soon!','info','🚪');
+  setTimeout(()=>goPage('dashboard'), 400);
+}
+document.getElementById('navLogout').addEventListener('click', doLogout);
+document.getElementById('miLogout').addEventListener('click', doLogout);
+document.getElementById('miAbout').addEventListener('click', ()=>goPage('about'));
+document.getElementById('miEditName').addEventListener('click', ()=>{
+  document.getElementById('studentNameInput').value = STATE.settings.studentName;
+  openModal('nameModal');
+});
+document.getElementById('btnSaveName').addEventListener('click', ()=>{
+  const v = document.getElementById('studentNameInput').value.trim();
+  if(v){ STATE.settings.studentName = v; persist('settings'); applyProfile(); toast('Name updated','success'); }
+  closeModal('nameModal');
+});
+function applyProfile(){
+  const name = STATE.settings.studentName || 'Student';
+  document.getElementById('profileNameTxt').textContent = name;
+  document.getElementById('avatarInit').textContent = name.trim().charAt(0).toUpperCase() || 'S';
+}
+
+/* ---------- Modal helpers ---------- */
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click', ()=>closeModal(el.dataset.close)));
+document.querySelectorAll('.modal-overlay').forEach(ov=>ov.addEventListener('click', e=>{ if(e.target===ov) closeModal(ov.id); }));
+
+let confirmCallback = null;
+function askConfirm(title, msg, cb){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  confirmCallback = cb;
+  openModal('confirmModal');
+}
+document.getElementById('btnConfirmYes').addEventListener('click', ()=>{
+  if(confirmCallback) confirmCallback();
+  closeModal('confirmModal');
+});
+
+/* ==================================================================
+   5. DASHBOARD
+   ================================================================== */
+function computeSubjectStats(subj){
+
+    const now = new Date();
+
+    const startDate = new Date(subj.startYear, subj.startMonth-1, 1);
+    const currentDate = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    let runningMonths = [];
+
+    if(startDate <= currentDate){
+
+        runningMonths = getMonthsBetween(
+            subj.startMonth,
+            subj.startYear,
+            now.getMonth()+1,
+            now.getFullYear()
+        );
+
+    }
+
+    const paidSet = new Set();
+
+    STATE.payments
+        .filter(p=>p.subjectId===subj.id)
+        .forEach(p=>{
+            p.months.forEach(m=>{
+                paidSet.add(monthKey(m.m,m.y));
+            });
+        });
+
+    const dueMonths = runningMonths.filter(m=>{
+        return !paidSet.has(monthKey(m.m,m.y));
+    });
+
+    const paidCount = runningMonths.filter(m =>
+    paidSet.has(monthKey(m.m,m.y))
+).length;
+
+    const totalPaid = paidCount * Number(subj.salary);
+    const totalDue = dueMonths.length * Number(subj.salary);
+
+    let status="No Running Month";
+
+    if(runningMonths.length){
+
+        if(dueMonths.length===0)
+            status="Paid";
+
+        else if(paidCount===0)
+            status="Due";
+
+        else
+            status="Partial";
+    }
+
+    return{
+
+        running:runningMonths,
+
+        dueMonths,
+
+        paidCount,
+
+        totalPaid,
+
+        totalDue,
+
+        status,
+
+        current:runningMonths.length
+            ? runningMonths[runningMonths.length-1]
+            : {m:subj.startMonth,y:subj.startYear}
+
+    };
+
+}
+
+function renderDashboard(){
+  const subs = STATE.subjects;
+  document.getElementById('statSubjects').textContent = subs.filter(s=>s.status==='Active').length;
+  let overallPaid=0, overallDue=0;
+  const subjBarsData=[];
+  subs.forEach(s=>{
+    const st = computeSubjectStats(s);
+    overallPaid += st.totalPaid; overallDue += st.totalDue;
+    subjBarsData.push({name:s.name, paid:st.totalPaid, total:st.totalPaid+st.totalDue});
+  });
+  const overallTotal = overallPaid+overallDue;
+  document.getElementById('statOverall').textContent = money(overallTotal);
+  document.getElementById('statDue').textContent = money(overallDue);
+  document.getElementById('statPaid').textContent = money(overallPaid);
+  document.getElementById('dashSubtitle').textContent = subs.length ? `You have ${subs.length} subject(s) tracked.` : `Add your first subject to get started.`;
+
+  // progress ring
+  const pct = overallTotal>0 ? Math.round((overallPaid/overallTotal)*100) : 0;
+  const ring = document.getElementById('progressRing');
+  ring.style.background = `conic-gradient(#f2b705 ${pct*3.6}deg, rgba(255,255,255,0.07) 0deg)`;
+  document.getElementById('progressVal').textContent = pct+'%';
+
+  // subject bars
+  const barsEl = document.getElementById('subjectBars');
+  if(!subjBarsData.length){ barsEl.innerHTML = '<div class="list-empty"><span class="em-ic">📭</span>No subjects yet</div>'; }
+  else{
+    barsEl.innerHTML = subjBarsData.map(b=>{
+      const p = b.total>0 ? Math.round((b.paid/b.total)*100) : 0;
+      return `<div class="bar-row"><div class="bar-row-top"><span>${escapeHtml(b.name)}</span><span>${p}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div></div>`;
+    }).join('');
+  }
+
+  // monthly collection - last 6 months
+  const now = new Date();
+  const months6 = [];
+  for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(), now.getMonth()-i, 1); months6.push({m:d.getMonth()+1,y:d.getFullYear()}); }
+  const sums = months6.map(mm=>{
+    let sum=0;
+    STATE.payments.forEach(p=>{ if(p.date && p.date.slice(0,7)===`${mm.y}-${pad(mm.m,2)}`) sum+=Number(p.amount); });
+    return sum;
+  });
+  const maxSum = Math.max(...sums, 1);
+  document.getElementById('monthChart').innerHTML = months6.map((mm,i)=>{
+    const h = Math.max(4, Math.round((sums[i]/maxSum)*100));
+    return `<div class="month-col"><div class="month-bar" style="height:${h}%" title="${money(sums[i])}"></div><div class="month-lbl">${MONTH_NAMES[mm.m-1].slice(0,3)}</div></div>`;
+  }).join('');
+
+  // recent payments
+  const recents = [...STATE.payments].sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
+  document.getElementById('recentPayments').innerHTML = recents.length ? recents.map(p=>{
+    const s = subs.find(x=>x.id===p.subjectId);
+    return `<div class="row-item"><div class="row-item-l"><div class="row-ic" style="background:var(--teal-soft); color:var(--teal);">💳</div><div><div class="truncate" style="font-weight:600;">${escapeHtml(s?s.name:'Subject')}</div><div style="color:var(--text-faint); font-size:.7rem;">${p.date}</div></div></div><div style="font-weight:700;">${money(p.amount)}</div></div>`;
+  }).join('') : '<div class="list-empty"><span class="em-ic">💤</span>No payments yet</div>';
+
+  // recent activity
+  document.getElementById('recentActivity').innerHTML = STATE.activity.length ? STATE.activity.slice(0,6).map(a=>
+    `<div class="row-item"><div class="row-item-l"><div class="row-ic" style="background:var(--gold-soft); color:var(--gold);">${a.icon}</div><div class="truncate">${escapeHtml(a.text)}</div></div><div style="color:var(--text-faint); font-size:.7rem;">${timeAgo(a.ts)}</div></div>`
+  ).join('') : '<div class="list-empty"><span class="em-ic">🗒️</span>No activity yet</div>';
+
+  // upcoming due
+  const dueList = subs.map(s=>({s, st:computeSubjectStats(s)})).filter(x=>x.st.dueMonths.length>0);
+  document.getElementById('upcomingDue').innerHTML = dueList.length ? dueList.slice(0,6).map(x=>
+    `<div class="row-item"><div class="row-item-l"><div class="row-ic" style="background:var(--coral-soft); color:var(--coral);">⏳</div><div><div class="truncate" style="font-weight:600;">${escapeHtml(x.s.name)}</div><div style="color:var(--text-faint); font-size:.7rem;">${x.st.dueMonths.length} month(s) due</div></div></div><div style="font-weight:700; color:var(--coral);">${money(x.st.totalDue)}</div></div>`
+  ).join('') : '<div class="list-empty"><span class="em-ic">🎉</span>All caught up</div>';
+
+  renderNotifications();
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+document.querySelector('[data-action="quick-add-subject"]').addEventListener('click', ()=>{ goPage('subjects'); openSubjectModal(); });
+document.querySelector('[data-action="quick-pay"]').addEventListener('click', ()=> goPage('payment'));
+document.querySelector('[data-action="quick-receipt"]').addEventListener('click', ()=> goPage('receipt'));
+
+/* ==================================================================
+   6. SUBJECTS
+   ================================================================== */
+function populateDayCheckboxes(selected){
+  selected = selected || [];
+  document.getElementById('dayCheckboxes').innerHTML = DAY_NAMES.map(d=>`
+    <label class="check-pill ${selected.includes(d)?'checked':''}" data-day="${d}">
+      <input type="checkbox" value="${d}" ${selected.includes(d)?'checked':''}>
+      <span>${d.slice(0,3)}</span>
+    </label>`).join('');
+  document.querySelectorAll('#dayCheckboxes .check-pill').forEach(p=>{
+    p.addEventListener('click', e=>{
+      e.preventDefault();
+      const cb = p.querySelector('input');
+      cb.checked = !cb.checked;
+      p.classList.toggle('checked', cb.checked);
+    });
+  });
+}
+function populateMonthYearSelects(sm, sy){
+
+    const ms = document.getElementById("subjStartMonth");
+    const ys = document.getElementById("subjStartYear");
+
+    ms.innerHTML = MONTH_NAMES.map((m,i)=>
+        `<option value="${i+1}">${m}</option>`
+    ).join("");
+
+    let opts = "";
+
+    const startYear = 2024;
+    const endYear = new Date().getFullYear()+10;
+
+    for(let y=startYear; y<=endYear; y++){
+        opts += `<option value="${y}">${y}</option>`;
+    }
+
+    ys.innerHTML = opts;
+
+    if(sm) ms.value = sm;
+    if(sy) ys.value = sy;
+
+}
+document.getElementById('btnAutoGenDate').addEventListener('click', ()=>{
+  const now = new Date();
+  document.getElementById('subjStartMonth').value = now.getMonth()+1;
+  document.getElementById('subjStartYear').value = now.getFullYear();
+  toast('Set to current month & year','info','⚡');
+});
+
+function openSubjectModal(subj){
+  document.getElementById('subjectModalTitle').textContent = subj ? 'Edit Subject' : 'Add Subject';
+  document.getElementById('subjEditId').value = subj ? subj.id : '';
+  document.getElementById('subjName').value = subj ? subj.name : '';
+  document.getElementById('subjTeacher').value = subj ? subj.teacher : '';
+  document.getElementById('subjSalary').value = subj ? subj.salary : '';
+  document.getElementById('subjStart').value = subj ? subj.startTime : '';
+  document.getElementById('subjEnd').value = subj ? subj.endTime : '';
+  document.getElementById('subjStatus').value = subj ? subj.status : 'Active';
+  populateDayCheckboxes(subj ? subj.days : []);
+  populateMonthYearSelects(subj ? subj.startMonth : null, subj ? subj.startYear : null);
+  openModal('subjectModal');
+}
+document.getElementById('btnAddSubject').addEventListener('click', ()=>openSubjectModal());
+
+document.getElementById('btnSaveSubject').addEventListener('click', ()=>{
+  const name = document.getElementById('subjName').value.trim();
+  const teacher = document.getElementById('subjTeacher').value.trim();
+  const salary = Number(document.getElementById('subjSalary').value);
+  const start = document.getElementById('subjStart').value;
+  const end = document.getElementById('subjEnd').value;
+  const days = [...document.querySelectorAll('#dayCheckboxes input:checked')].map(i=>i.value);
+  const startMonth = Number(document.getElementById('subjStartMonth').value);
+  const startYear = Number(document.getElementById('subjStartYear').value);
+  const status = document.getElementById('subjStatus').value;
+  const editId = document.getElementById('subjEditId').value;
+
+  if(!name){ toast('Subject name is required','error'); return; }
+  if(!teacher){ toast('Teacher name is required','error'); return; }
+  if(!salary || salary<=0){ toast('Enter a valid monthly salary','error'); return; }
+  if(!days.length){ toast('Select at least one day','error'); return; }
+  if(!start || !end){ toast('Select start and end time','error'); return; }
+  if(end <= start){ toast('End time must be after start time','error'); return; }
+
+  if(editId){
+    const s = STATE.subjects.find(x=>x.id===editId);
+    Object.assign(s, {name,teacher,salary,startTime:start,endTime:end,days,startMonth,startYear,status});
+    logActivity(`Updated subject "${name}"`, '✏️');
+    toast('Subject updated','success');
+  } else {
+    STATE.subjects.push({ id:uid(), name, teacher, salary, startTime:start, endTime:end, days, startMonth, startYear, status });
+    logActivity(`Added subject "${name}"`, '➕');
+    toast('Subject added','success');
+  }
+  persist('subjects');
+  closeModal('subjectModal');
+  renderSubjects(); renderDashboard();
+});
+
+function renderSubjects(){
+  const search = (document.getElementById('subjSearch').value||'').toLowerCase();
+  const filterStatus = document.getElementById('subjFilterStatus').value;
+  const list = STATE.subjects.filter(s=>{
+    const matchSearch = !search || s.name.toLowerCase().includes(search) || s.teacher.toLowerCase().includes(search);
+    const matchStatus = !filterStatus || s.status===filterStatus;
+    return matchSearch && matchStatus;
+  });
+  const el = document.getElementById('subjectList');
+  if(!list.length){
+    el.innerHTML = `<div class="glass card empty-state" style="grid-column:1/-1;"><div class="empty-ic">📚</div><div class="empty-title">No subjects found</div><div class="empty-sub">Add a subject to start tracking payments.</div><button class="btn btn-gold" onclick="openSubjectModal()">➕ Add Subject</button></div>`;
+    return;
+  }
+  el.innerHTML = list.map(s=>{
+    const st = computeSubjectStats(s);
+    const dueLabel = st.dueMonths.length ? st.dueMonths.map(d=>monthLabel(d.m,d.y).slice(0,3)+' '+d.y).slice(0,3).join(', ') : 'None';
+    return `
+    <div class="glass card subject-card">
+      <div class="subj-head">
+        <div><div class="subj-name">${escapeHtml(s.name)}</div><div class="subj-teacher">👤 ${escapeHtml(s.teacher)}</div></div>
+        <span class="chip ${s.status==='Active'?'chip-green':'chip-gray'}">${s.status}</span>
+      </div>
+      <div class="subj-meta">
+        <div><span>Salary</span>${money(s.salary)}/mo</div>
+        <div><span>Time</span>${to12Hour(s.startTime)} - ${to12Hour(s.endTime)}</div>
+        <div><span>Started</span>${monthLabel(s.startMonth,s.startYear)}</div>
+        <div><span>Current Month</span>${monthLabel(st.current.m,st.current.y)}</div>
+        <div style="grid-column:1/-1;"><span>Paid Month(s)</span>${st.paidCount}</div>
+        <div style="grid-column:1/-1;"><span>Due Month(s)</span>${st.dueMonths.length} ${st.dueMonths.length?'('+dueLabel+(st.dueMonths.length>3?'…':'')+')':''}</div>
+      </div>
+      <div class="days-row">${s.days.map(d=>`<span class="day-pill">${d.slice(0,3)}</span>`).join('')}</div>
+      <div class="subj-actions">
+        <button class="btn btn-sm" data-edit="${s.id}">✏️ Edit</button>
+        <button class="btn btn-sm btn-danger" data-del="${s.id}">🗑️ Delete</button>
+        <button class="btn btn-sm btn-gold" data-pay="${s.id}">💳 Pay</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>{
+    const s = STATE.subjects.find(x=>x.id===b.dataset.edit); openSubjectModal(s);
+  }));
+  el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
+    const s = STATE.subjects.find(x=>x.id===b.dataset.del);
+    askConfirm('Delete subject?', `This will permanently delete "${s.name}" and its payment history.`, ()=>{
+      STATE.subjects = STATE.subjects.filter(x=>x.id!==s.id);
+      STATE.payments = STATE.payments.filter(x=>x.subjectId!==s.id);
+      persist('subjects'); persist('payments');
+      logActivity(`Deleted subject "${s.name}"`, '🗑️');
+      toast('Subject deleted','success');
+      renderSubjects(); renderDashboard();
+    });
+  }));
+  el.querySelectorAll('[data-pay]').forEach(b=>b.addEventListener('click', ()=>{
+    goPage('payment');
+    document.getElementById('paySubjectSelect').value = b.dataset.pay;
+    document.getElementById('paySubjectSelect').dispatchEvent(new Event('change'));
+  }));
+}
+document.getElementById('subjSearch').addEventListener('input', renderSubjects);
+document.getElementById('subjFilterStatus').addEventListener('change', renderSubjects);
+
+/* ==================================================================
+   7. PAYMENT
+   ================================================================== */
+function renderPaymentSubjectOptions(){
+  const sel = document.getElementById('paySubjectSelect');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">-- choose subject --</option>' + STATE.subjects.map(s=>`<option value="${s.id}">${escapeHtml(s.name)} — ${escapeHtml(s.teacher)}</option>`).join('');
+  if(cur) sel.value = cur;
+  document.getElementById('payDate').value = todayISO();
+}
+let selectedPayMonths = [];
+document.getElementById('paySubjectSelect').addEventListener('change', function(){
+  const id = this.value;
+  const wrap = document.getElementById('payDetails');
+  if(!id){ wrap.style.display='none'; return; }
+  const s = STATE.subjects.find(x=>x.id===id);
+  const st = computeSubjectStats(s);
+  wrap.style.display='block';
+  document.getElementById('payTeacher').textContent = s.teacher;
+  document.getElementById('paySalary').textContent = money(s.salary);
+  document.getElementById('payPaidCount').textContent = st.paidCount;
+  document.getElementById('payDueCount').textContent = st.dueMonths.length;
+  document.getElementById('payCurrentMonth').textContent = monthLabel(st.current.m, st.current.y);
+  selectedPayMonths = [];
+  const listEl = document.getElementById('payMonthList');
+
+if(st.dueMonths.length === 0){
+
+    listEl.innerHTML = `
+    <div class="glass card" style="
+        text-align:center;
+        border:1px solid rgba(34,197,94,.35);
+        background:rgba(34,197,94,.08);
+    ">
+        <div style="font-size:40px;">✅</div>
+
+        <h3 style="margin:10px 0 6px;color:#22c55e;">
+            Payment Up To Date
+        </h3>
+
+        <p style="color:#9ca3af;">
+            All running months have been paid.
+            <br>
+            No dues remaining.
+        </p>
+    </div>`;
+
+}else{
+
+listEl.innerHTML = st.dueMonths.map(d=>{
+
+    const key = monthKey(d.m,d.y);
+
+    return `
+    <div class="month-check-item"
+         data-key="${key}"
+         data-m="${d.m}"
+         data-y="${d.y}">
+
+        <span>${monthLabel(d.m,d.y)}</span>
+
+        <input type="checkbox">
+
+    </div>`;
+
+}).join("");
+
+listEl.querySelectorAll(".month-check-item").forEach(item => {
+
+    item.addEventListener("click", () => {
+
+        const key = item.dataset.key;
+
+        const idx = selectedPayMonths.findIndex(x => x.key === key);
+
+        const cb = item.querySelector("input");
+
+        if (idx > -1) {
+
+            selectedPayMonths.splice(idx, 1);
+
+            cb.checked = false;
+
+            item.classList.remove("checked");
+
+        } else {
+
+            selectedPayMonths.push({
+                key,
+                m: Number(item.dataset.m),
+                y: Number(item.dataset.y)
+            });
+
+            cb.checked = true;
+
+            item.classList.add("checked");
+
+        }
+
+        document.getElementById("payAmount").textContent =
+            money(selectedPayMonths.length * s.salary);
+
+    });
+
+});
+
+}
+
+document.getElementById("payAmount").textContent = money(0);
+})
+document.getElementById("btnConfirmPay").addEventListener("click", () => {
+
+    const id = document.getElementById("paySubjectSelect").value;
+
+    const s = STATE.subjects.find(x => x.id === id);
+
+    if (!s) {
+        toast("Select a subject first", "error");
+        return;
+    }
+
+    if (selectedPayMonths.length === 0) {
+        toast("Select at least one unpaid month.", "error");
+        return;
+    }
+
+    const date = document.getElementById("payDate").value || todayISO();
+    const method = document.getElementById("payMethod").value;
+    const notes = document.getElementById("payNotes").value.trim();
+
+    // Already paid months
+    const alreadyPaid = new Set(
+        STATE.payments
+            .filter(p => p.subjectId === s.id)
+            .flatMap(p => p.months.map(m => monthKey(m.m, m.y)))
+    );
+
+    // Remove duplicate months
+    const clean = selectedPayMonths.filter(
+        m => !alreadyPaid.has(monthKey(m.m, m.y))
+    );
+
+    if (clean.length === 0) {
+        toast("These months are already paid.", "error");
+        return;
+    }
+
+    const amount = clean.length * Number(s.salary);
+
+    const payment = {
+        id: uid(),
+        subjectId: s.id,
+        months: clean.map(m => ({
+            m: m.m,
+            y: m.y
+        })),
+        amount,
+        date,
+        method,
+        notes,
+        createdAt: Date.now()
+    };
+
+    STATE.payments.push(payment);
+    persist("payments");
+
+    logActivity(`Paid ${money(amount)} for "${s.name}"`, "💳");
+
+    // Auto receipt
+    const rec = buildSubjectReceipt(s, payment);
+    STATE.receipts.unshift(rec);
+    persist("receipts");
+
+    logActivity(`Receipt ${rec.receiptNo} generated`, "🧾");
+
+    toast("Payment successful!", "success", "✅");
+
+    // Reset UI
+    selectedPayMonths = [];
+    document.getElementById("payNotes").value = "";
+    document.getElementById("payAmount").textContent = money(0);
+
+    // Refresh all pages
+    document.getElementById("paySubjectSelect")
+        .dispatchEvent(new Event("change"));
+
+    renderDashboard();
+    renderSubjects();
+    renderStatus();
+    renderReceiptOptions();
+});
+
+/* ==================================================================
+   8. STATUS
+   ================================================================== */
+let statusSort = {key:'name', dir:1};
+function renderStatus(){
+  const search = (document.getElementById('statusSearch').value||'').toLowerCase();
+  const filter = document.getElementById('statusFilter').value;
+  let rows = STATE.subjects.map(s=>{
+    const st = computeSubjectStats(s);
+    return { id:s.id, name:s.name, teacher:s.teacher, salary:s.salary, paid:st.totalPaid, due:st.totalDue, current:monthLabel(st.current.m,st.current.y), status:st.status };
+  });
+  rows = rows.filter(r=>{
+    const matchSearch = !search || r.name.toLowerCase().includes(search) || r.teacher.toLowerCase().includes(search);
+    const matchFilter = !filter || r.status===filter;
+    return matchSearch && matchFilter;
+  });
+  rows.sort((a,b)=>{
+    const k = statusSort.key;
+    if(typeof a[k]==='number') return (a[k]-b[k])*statusSort.dir;
+    return String(a[k]).localeCompare(String(b[k]))*statusSort.dir;
+  });
+  const totalPaid = rows.reduce((a,r)=>a+r.paid,0);
+  const totalDue = rows.reduce((a,r)=>a+r.due,0);
+  document.getElementById('statusTotalPaid').textContent = money(totalPaid);
+  document.getElementById('statusTotalDue').textContent = money(totalDue);
+
+  const body = document.getElementById('statusBody');
+  if(!rows.length){ body.innerHTML = `<tr><td colspan="7"><div class="list-empty"><span class="em-ic">📭</span>No records found</div></td></tr>`; return; }
+  const chipClass = {Paid:'chip-green', Partial:'chip-orange', Due:'chip-red'};
+  body.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.teacher)}</td><td>${money(r.salary)}</td>
+      <td style="color:var(--teal); font-weight:600;">${money(r.paid)}</td>
+      <td style="color:var(--coral); font-weight:600;">${money(r.due)}</td>
+      <td>${r.current}</td>
+      <td><span class="chip ${chipClass[r.status]}">${r.status}</span></td>
+    </tr>`).join('');
+}
+document.getElementById('statusSearch').addEventListener('input', renderStatus);
+document.getElementById('statusFilter').addEventListener('change', renderStatus);
+document.querySelectorAll('#statusTable th[data-sort]').forEach(th=>th.addEventListener('click', ()=>{
+  const key = th.dataset.sort;
+  statusSort.dir = (statusSort.key===key) ? -statusSort.dir : 1;
+  statusSort.key = key;
+  renderStatus();
+}));
+
+/* ==================================================================
+   9. RECEIPT + PDF
+   ================================================================== */
+document.querySelectorAll('.tab-btn[data-rtab]').forEach(t=>t.addEventListener('click', ()=>{
+  document.querySelectorAll('.tab-btn[data-rtab]').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  ['subject','overall','history'].forEach(k=>document.getElementById('rtab-'+k).style.display = (k===t.dataset.rtab)?'block':'none');
+  document.getElementById('receiptPreviewWrap').style.display='none';
+  if(t.dataset.rtab==='history') renderReceiptHistory();
+}));
+
+function renderReceiptOptions(){
+  const sSel = document.getElementById('rcSubjectSelect');
+  sSel.innerHTML = '<option value="">-- choose subject --</option>' + STATE.subjects.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  document.getElementById('rcPaymentSelect').innerHTML = '<option value="">-- choose payment --</option>';
+  renderReceiptHistory();
+}
+document.getElementById('rcSubjectSelect').addEventListener('change', function(){
+  const pSel = document.getElementById('rcPaymentSelect');
+  const pays = STATE.payments.filter(p=>p.subjectId===this.value).sort((a,b)=>b.createdAt-a.createdAt);
+  pSel.innerHTML = '<option value="">-- choose payment --</option>' + pays.map(p=>`<option value="${p.id}">${p.date} — ${money(p.amount)} (${p.months.map(m=>monthLabel(m.m,m.y)).join(', ')})</option>`).join('');
+});
+
+function nextReceiptNo(type){
+  if(type==='subject'){ const n = STATE.settings.nextSR++; persist('settings'); return 'EDUPY-SR-'+pad(n,6); }
+  const n = STATE.settings.nextOR++; persist('settings'); return 'EDUPY-OR-'+pad(n,6);
+}
+function buildSubjectReceipt(subj, payment){
+  return {
+    id:uid(), type:'subject', receiptNo: nextReceiptNo('subject'),
+    subjectId:subj.id, subjectName:subj.name, teacher:subj.teacher,
+    date:payment.date, months:payment.months, amount:payment.amount,
+    method:payment.method, notes:payment.notes||'', createdAt:Date.now()
+  };
+}
+document.getElementById('btnGenSubjectReceipt').addEventListener('click', ()=>{
+  const sid = document.getElementById('rcSubjectSelect').value;
+  const pid = document.getElementById('rcPaymentSelect').value;
+  if(!sid || !pid){ toast('Select subject and payment record','error'); return; }
+  const s = STATE.subjects.find(x=>x.id===sid);
+  const p = STATE.payments.find(x=>x.id===pid);
+  const rec = buildSubjectReceipt(s,p);
+  STATE.receipts.unshift(rec); persist('receipts');
+  logActivity(`Receipt ${rec.receiptNo} generated`,'🧾');
+  toast('Receipt generated','success','🧾');
+  showReceiptPreview(rec);
+});
+document.getElementById('btnGenOverallReceipt').addEventListener('click', ()=>{
+  if(!STATE.subjects.length){ toast('Add subjects first','error'); return; }
+  let totalPaid=0, totalDue=0;
+  const rows = STATE.subjects.map(s=>{ const st=computeSubjectStats(s); totalPaid+=st.totalPaid; totalDue+=st.totalDue; return {name:s.name, teacher:s.teacher, paid:st.totalPaid, due:st.totalDue}; });
+  const rec = { id:uid(), type:'overall', receiptNo: nextReceiptNo('overall'), date:todayISO(), rows, totalPaid, totalDue, createdAt:Date.now() };
+  STATE.receipts.unshift(rec); persist('receipts');
+  logActivity(`Overall receipt ${rec.receiptNo} generated`,'🧾');
+  toast('Overall receipt generated','success','🧾');
+  showReceiptPreview(rec);
+});
+
+function renderReceiptHistory(){
+  const el = document.getElementById('receiptHistory');
+  if(!STATE.receipts.length){ el.innerHTML = `<div class="glass card empty-state" style="grid-column:1/-1;"><div class="empty-ic">🧾</div><div class="empty-title">No receipts yet</div><div class="empty-sub">Generate your first receipt from Payment or Receipt page.</div></div>`; return; }
+  el.innerHTML = STATE.receipts.map(r=>`
+    <div class="glass card" style="cursor:pointer;" data-rid="${r.id}">
+      <div class="stat-label">${r.type==='subject'?'Subject Receipt':'Overall Receipt'}</div>
+      <div style="font-family:var(--font-m); font-weight:700; margin:6px 0;">${r.receiptNo}</div>
+      <div style="font-size:.78rem; color:var(--text-dim);">${r.date}${r.subjectName?' • '+escapeHtml(r.subjectName):''}</div>
+      <div style="font-weight:700; margin-top:6px;">${money(r.amount!==undefined ? r.amount : r.totalPaid)}</div>
+    </div>`).join('');
+  el.querySelectorAll('[data-rid]').forEach(c=>c.addEventListener('click', ()=>{
+    const r = STATE.receipts.find(x=>x.id===c.dataset.rid);
+    showReceiptPreview(r);
+  }));
+}
+
+let currentReceipt = null;
+function showReceiptPreview(rec){
+  currentReceipt = rec;
+  const wrap = document.getElementById('receiptPreviewWrap');
+  wrap.style.display='block';
+  const name = STATE.settings.studentName || 'Student';
+  const now = new Date();
+  if(rec.type==='subject'){
+    document.getElementById('receiptPreview').innerHTML = `
+      <div class="rc-head"><div class="rc-logo">EduPay Pico<small>Smart Coaching Payment Manager</small></div>
+        <div class="rc-num">${rec.receiptNo}<br>${rec.date}</div></div>
+      <div class="rc-grid">
+        <div><span>Student</span>${escapeHtml(name)}</div>
+        <div><span>Time</span>${now.toLocaleTimeString()}</div>
+        <div><span>Subject</span>${escapeHtml(rec.subjectName)}</div>
+        <div><span>Teacher</span>${escapeHtml(rec.teacher)}</div>
+      </div>
+      <table class="rc-table"><thead><tr><th>Month(s) Paid</th><th>Method</th><th>Amount</th></tr></thead>
+        <tbody><tr><td>${rec.months.map(m=>monthLabel(m.m,m.y)).join(', ')}</td><td>${rec.method}</td><td>${money(rec.amount)}</td></tr>
+        <tr class="rc-total-row"><td colspan="2">Total</td><td>${money(rec.amount)}</td></tr></tbody></table>
+      ${rec.notes?`<div style="font-size:.78rem; margin-bottom:12px;"><b>Notes:</b> ${escapeHtml(rec.notes)}</div>`:''}
+      <div class="rc-foot">Generated automatically by EduPay Pico</div>`;
+  } else {
+    document.getElementById('receiptPreview').innerHTML = `
+      <div class="rc-head"><div class="rc-logo">EduPay Pico<small>Smart Coaching Payment Manager</small></div>
+        <div class="rc-num">${rec.receiptNo}<br>${rec.date}</div></div>
+      <div class="rc-grid"><div><span>Student</span>${escapeHtml(name)}</div><div><span>Time</span>${now.toLocaleTimeString()}</div></div>
+      <table class="rc-table"><thead><tr><th>Subject</th><th>Teacher</th><th>Paid</th><th>Due</th></tr></thead>
+        <tbody>${rec.rows.map(r=>`<tr><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.teacher)}</td><td>${money(r.paid)}</td><td>${money(r.due)}</td></tr>`).join('')}
+        <tr class="rc-total-row"><td colspan="2">Total</td><td>${money(rec.totalPaid)}</td><td>${money(rec.totalDue)}</td></tr></tbody></table>
+      <div class="rc-foot">Generated automatically by EduPay Pico</div>`;
+  }
+  wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+document.getElementById('btnPrintReceipt').addEventListener('click', ()=>{
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><title>${currentReceipt.receiptNo}</title><style>
+    body{font-family:Arial,sans-serif; padding:30px; color:#20180a;}
+    table{width:100%; border-collapse:collapse; margin:14px 0;} th,td{border:1px solid #e4d7ad; padding:8px; text-align:left; font-size:13px;}
+    th{background:#f7edcc;} .h{display:flex; justify-content:space-between; border-bottom:2px dashed #e4d7ad; padding-bottom:10px; margin-bottom:10px;}
+  </style></head><body>${document.getElementById('receiptPreview').innerHTML}</body></html>`);
+  w.document.close(); w.focus(); setTimeout(()=>w.print(),300);
+});
+
+document.getElementById('btnDownloadPdf').addEventListener('click', ()=>{
+  if(!currentReceipt) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const rec = currentReceipt;
+  const name = STATE.settings.studentName || 'Student';
+  let y = 60;
+  doc.setFillColor(242,183,5); doc.rect(0,0,595,8,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(30,25,10);
+  doc.text('EduPay Pico', 40, y);
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(120,105,60);
+  doc.text('Smart Coaching Payment Manager', 40, y+14);
+  doc.setFontSize(10); doc.setTextColor(60,50,20);
+  doc.text(rec.receiptNo, 555, y-6, {align:'right'});
+  doc.text(rec.date, 555, y+10, {align:'right'});
+  y += 40;
+  doc.setDrawColor(228,215,173); doc.setLineWidth(1); doc.line(40,y,555,y);
+  y += 26;
+  doc.setFontSize(10); doc.setTextColor(30,25,10);
+  doc.text('Student: '+name, 40, y);
+  if(rec.type==='subject'){
+    doc.text('Subject: '+rec.subjectName, 320, y); y+=18;
+    doc.text('Teacher: '+rec.teacher, 40, y);
+    doc.text('Method: '+rec.method, 320, y); y+=26;
+    doc.setFillColor(247,237,204); doc.rect(40,y,515,22,'F');
+    doc.setFont('helvetica','bold'); doc.text('Month(s) Paid', 48, y+15); doc.text('Amount', 480, y+15);
+    y += 22;
+    doc.setFont('helvetica','normal');
+    doc.text(rec.months.map(m=>MONTH_NAMES[m.m-1]+' '+m.y).join(', '), 48, y+16, {maxWidth:400});
+    doc.text('Tk '+Number(rec.amount).toLocaleString('en-IN'), 480, y+16);
+    y += 34;
+    doc.setDrawColor(228,215,173); doc.line(40,y,555,y); y+=18;
+    doc.setFont('helvetica','bold'); doc.text('Total: Tk '+Number(rec.amount).toLocaleString('en-IN'), 480, y, {align:'right'});
+    if(rec.notes){ y+=24; doc.setFont('helvetica','normal'); doc.text('Notes: '+rec.notes, 40, y, {maxWidth:515}); }
+  } else {
+    y += 8;
+    doc.setFillColor(247,237,204); doc.rect(40,y,515,22,'F');
+    doc.setFont('helvetica','bold');
+    doc.text('Subject',48,y+15); doc.text('Teacher',210,y+15); doc.text('Paid',380,y+15); doc.text('Due',470,y+15);
+    y+=22; doc.setFont('helvetica','normal');
+    rec.rows.forEach(r=>{
+      doc.text(r.name,48,y+15,{maxWidth:150}); doc.text(r.teacher,210,y+15,{maxWidth:150});
+      doc.text('Tk '+Number(r.paid).toLocaleString('en-IN'),380,y+15);
+      doc.text('Tk '+Number(r.due).toLocaleString('en-IN'),470,y+15);
+      y+=20;
+    });
+    y+=8; doc.setDrawColor(228,215,173); doc.line(40,y,555,y); y+=18;
+    doc.setFont('helvetica','bold');
+    doc.text('Total Paid: Tk '+Number(rec.totalPaid).toLocaleString('en-IN'), 40, y);
+    doc.text('Total Due: Tk '+Number(rec.totalDue).toLocaleString('en-IN'), 320, y);
+  }
+  doc.setFontSize(8); doc.setTextColor(150,140,110); doc.setFont('helvetica','normal');
+  doc.text('Generated automatically by EduPay Pico', 297, 800, {align:'center'});
+  doc.save(rec.receiptNo+'.pdf');
+  toast('PDF downloaded','success','⬇️');
+});
+
+/* ==================================================================
+   10. ABOUT / BACKUP
+   ================================================================== */
+document.getElementById('btnExportJson').addEventListener('click', ()=>{
+  const backup = { subjects:STATE.subjects, payments:STATE.payments, receipts:STATE.receipts, settings:STATE.settings, activity:STATE.activity, exportedAt:new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(backup,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'edupay-pico-backup-'+todayISO()+'.json';
+  a.click();
+  toast('Backup downloaded','success','⬇️');
+});
+document.getElementById('btnImportJsonTrigger').addEventListener('click', ()=>document.getElementById('importFileInput').click());
+document.getElementById('importFileInput').addEventListener('change', function(){
+  const file = this.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      askConfirm('Import backup?', 'This will replace your current data with the imported file.', ()=>{
+        STATE.subjects = data.subjects || [];
+        STATE.payments = data.payments || [];
+        STATE.receipts = data.receipts || [];
+        STATE.activity = data.activity || [];
+        STATE.settings = data.settings || STATE.settings;
+        persist('subjects'); persist('payments'); persist('receipts'); persist('activity'); persist('settings');
+        toast('Backup imported','success','⬆️');
+        applyProfile(); renderDashboard(); renderSubjects();
+      });
+    }catch(err){ toast('Invalid JSON file','error'); }
+  };
+  reader.readAsText(file);
+  this.value='';
+});
+document.getElementById('btnResetDb').addEventListener('click', ()=>{
+  askConfirm('Reset database?', 'This permanently deletes all subjects, payments and receipts. This cannot be undone.', ()=>{
+    STATE = { subjects:[], payments:[], receipts:[], activity:[], settings:{studentName:STATE.settings.studentName, nextSR:1, nextOR:1} };
+    Object.values(DB_KEYS).forEach(k=>localStorage.removeItem(k));
+    persist('subjects'); persist('payments'); persist('receipts'); persist('activity'); persist('settings');
+    toast('Database reset','success','🗑️');
+    renderDashboard(); renderSubjects();
+  });
+});
+
+/* ==================================================================
+   11. INIT
+   ================================================================== */
+applyProfile();
+renderDashboard();
+renderSubjects();
+renderPaymentSubjectOptions();
+renderStatus();
+renderReceiptOptions();
+</script>
+<footer class="portfolio-footer">
+
+    <div class="footer-logo">
+        <a href="https://moshiur-port.netlify.app/" target="_self">
+            ✦ MD. MOSHIUR RAHMAN ✦
+        </a>
+    </div>
+
+    <p class="footer-tagline">
+        Building Modern Web Experiences with Passion and ❤️.
+    </p>
+
+    <div class="footer-line"></div>
+
+    <p class="footer-copy">
+        © 2026 All Rights Reserved.
+    </p>
+
+</footer>
+</body>
+</html>
