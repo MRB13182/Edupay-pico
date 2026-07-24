@@ -1112,3 +1112,203 @@ window.addEventListener('appinstalled', () => {
   if(miInstallApp) miInstallApp.style.display = 'none';
   toast('EduPay Pico added to your home screen', 'success', '🎉');
 });
+/* =====================================================
+   EduPay Pico PWA SYSTEM
+===================================================== */
+
+let deferredPrompt = null;
+
+
+/* Service Worker Register */
+
+if ("serviceWorker" in navigator) {
+
+window.addEventListener("load", ()=>{
+
+
+navigator.serviceWorker.register("/service-worker.js")
+
+.then(reg=>{
+
+console.log(
+"EduPay PWA Service Worker Active",
+reg
+);
+
+
+/* Update Detection */
+
+reg.addEventListener(
+"updatefound",
+()=>{
+
+
+const newWorker = reg.installing;
+
+
+newWorker.addEventListener(
+"statechange",
+()=>{
+
+
+if(
+newWorker.state === "installed" &&
+navigator.serviceWorker.controller
+){
+
+document
+.getElementById("updatePopup")
+?.classList.add("open");
+
+
+}
+
+
+});
+
+
+});
+
+
+})
+
+
+.catch(err=>{
+
+console.error(
+"Service Worker Error",
+err
+);
+
+});
+
+
+});
+
+}
+
+
+
+/* Install App Button */
+
+window.addEventListener(
+"beforeinstallprompt",
+(e)=>{
+
+
+e.preventDefault();
+
+
+deferredPrompt = e;
+
+
+/* show buttons */
+
+const fab =
+document.getElementById("installFab");
+
+
+const menu =
+document.getElementById("miInstallApp");
+
+
+if(fab)
+fab.style.display="flex";
+
+
+if(menu)
+menu.style.display="flex";
+
+
+});
+
+
+
+async function installEduPay(){
+
+
+if(!deferredPrompt)
+return;
+
+
+deferredPrompt.prompt();
+
+
+const result =
+await deferredPrompt.userChoice;
+
+
+console.log(result.outcome);
+
+
+deferredPrompt=null;
+
+
+}
+
+
+
+document
+.getElementById("installFab")
+?.addEventListener(
+"click",
+installEduPay
+);
+
+
+
+document
+.getElementById("miInstallApp")
+?.addEventListener(
+"click",
+installEduPay
+);
+
+
+
+/* Update Now Button */
+
+document
+.getElementById("btnUpdateNow")
+?.addEventListener(
+"click",
+()=>{
+
+
+navigator.serviceWorker
+.getRegistration()
+.then(reg=>{
+
+
+if(reg && reg.waiting){
+
+
+reg.waiting.postMessage({
+type:"SKIP_WAITING"
+});
+
+
+}
+
+
+});
+
+
+location.reload();
+
+
+});
+
+
+
+document
+.getElementById("btnUpdateLater")
+?.addEventListener(
+"click",
+()=>{
+
+document
+.getElementById("updatePopup")
+?.classList.remove("open");
+
+});
