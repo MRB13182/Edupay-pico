@@ -18,13 +18,13 @@
   ],
 "icons": [
   {
-    "src": "/paypico.png",
+    "src": "paypico.png",
     "sizes": "192x192",
     "type": "image/png",
     "purpose": "any maskable"
   },
   {
-    "src": "/paypico.png",
+    "src": "paypico.png",
     "sizes": "512x512",
     "type": "image/png",
     "purpose": "any maskable"
