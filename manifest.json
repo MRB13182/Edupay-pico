@@ -1,41 +1,33 @@
 {
   "name": "EduPay Pico — Smart Coaching Payment Manager",
-  "short_name": "EduPay",
+  "short_name": "EduPay Pico",
   "description": "Smart, offline-first coaching payment manager — track subjects, payments, dues and generate professional receipts.",
   "id": "/",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#F2B705",
   "background_color": "#070B14",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["finance", "education", "productivity"],
+  "categories": [
+    "finance",
+    "education",
+    "productivity"
+  ],
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "icon-512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ]
 }
