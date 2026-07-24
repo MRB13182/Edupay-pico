@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>EduPay Pico — Smart Coaching Payment Manager</title>
+
+<!-- ============ PWA META ============ -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F2B705">
+<meta name="background_color" content="#070B14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EduPay">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -96,6 +108,10 @@
 
                 <button class="dropdown-item" id="miAbout">
                     ℹ️ About
+                </button>
+
+                <button class="dropdown-item" id="miInstallApp" style="display:none;">
+                    📲 Install App
                 </button>
 
                 <button class="dropdown-item danger" id="miLogout">
@@ -573,6 +589,26 @@ Frontend developer passionate about creating premium web applications with moder
     </div>
   </div>
 </div>
+
+<!-- ============ PWA: UPDATE POPUP ============ -->
+<div class="modal-overlay" id="updatePopup">
+  <div class="modal-box glass update-box">
+    <div class="update-icon-wrap">🚀</div>
+    <div class="modal-title" style="text-align:center; margin-bottom:8px;">New Update Available</div>
+    <p style="font-size:.85rem; color:var(--text-dim); text-align:center; margin-bottom:20px;">
+      A new version of EduPay Pico is ready.
+    </p>
+    <div class="modal-foot">
+      <button class="btn btn-block" id="btnUpdateLater">Later</button>
+      <button class="btn btn-gold btn-block" id="btnUpdateNow">Update Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PWA: INSTALL FAB ============ -->
+<button class="install-fab" id="installFab" style="display:none;">
+  <span>📲</span> Install App
+</button>
 
 <div id="toast-stack"></div>
 

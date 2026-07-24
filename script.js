@@ -957,3 +957,158 @@ renderSubjects();
 renderPaymentSubjectOptions();
 renderStatus();
 renderReceiptOptions();
+
+/* ==================================================================
+   12. PWA — VERSION, SERVICE WORKER, INSTALL & UPDATE SYSTEM
+   (Existing LocalStorage data — edupay_subjects, edupay_payments,
+   edupay_receipts, edupay_settings, edupay_activity — is never
+   deleted by anything below.)
+   ================================================================== */
+const APP_VERSION = "1.0.1";
+const PWA_KEYS = {
+  lastVersion: 'edupay_last_version',
+  backup: 'edupay_backup_latest',
+  updateFlag: 'edupay_update_in_progress'
+};
+
+/* ---------- Backup / restore safety net ---------- */
+function createLocalBackup(){
+  try{
+    const backup = {
+      subjects: loadDB(DB_KEYS.subjects, []),
+      payments: loadDB(DB_KEYS.payments, []),
+      receipts: loadDB(DB_KEYS.receipts, []),
+      settings: loadDB(DB_KEYS.settings, {}),
+      activity: loadDB(DB_KEYS.activity, []),
+      backedUpAt: new Date().toISOString(),
+      version: APP_VERSION
+    };
+    localStorage.setItem(PWA_KEYS.backup, JSON.stringify(backup));
+    return true;
+  }catch(e){ console.error('[PWA] Backup failed:', e); return false; }
+}
+function restoreLocalBackup(){
+  try{
+    const raw = localStorage.getItem(PWA_KEYS.backup);
+    if(!raw) return false;
+    const backup = JSON.parse(raw);
+    if(backup.subjects) saveDB(DB_KEYS.subjects, backup.subjects);
+    if(backup.payments) saveDB(DB_KEYS.payments, backup.payments);
+    if(backup.receipts) saveDB(DB_KEYS.receipts, backup.receipts);
+    if(backup.settings) saveDB(DB_KEYS.settings, backup.settings);
+    if(backup.activity) saveDB(DB_KEYS.activity, backup.activity);
+    return true;
+  }catch(e){ console.error('[PWA] Restore failed:', e); return false; }
+}
+
+/* If a prior update was interrupted mid-way (flag never cleared),
+   restore the last known-good backup automatically on next load. */
+(function recoverFromInterruptedUpdate(){
+  try{
+    if(localStorage.getItem(PWA_KEYS.updateFlag) === '1'){
+      restoreLocalBackup();
+      localStorage.removeItem(PWA_KEYS.updateFlag);
+    }
+  }catch(e){ /* no-op */ }
+})();
+try{ localStorage.setItem(PWA_KEYS.lastVersion, APP_VERSION); }catch(e){}
+
+/* ---------- Update popup helpers ---------- */
+function showUpdatePopup(){ openModal('updatePopup'); }
+function hideUpdatePopup(){ closeModal('updatePopup'); }
+
+/* ---------- Service worker registration + update detection ---------- */
+let swRegistration = null;
+let waitingWorker = null;
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then((reg) => {
+        swRegistration = reg;
+
+        /* An update was already waiting when the app opened */
+        if(reg.waiting && navigator.serviceWorker.controller){
+          waitingWorker = reg.waiting;
+          showUpdatePopup();
+        }
+
+        /* A new update is discovered while the app is open */
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if(!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+              waitingWorker = newWorker;
+              showUpdatePopup();
+            }
+          });
+        });
+
+        /* Periodic background check for new versions (hourly) */
+        setInterval(() => { reg.update().catch(()=>{}); }, 60 * 60 * 1000);
+      })
+      .catch((err) => console.error('[PWA] Service worker registration failed:', err));
+
+    /* Reload exactly once the new worker takes control */
+    let refreshingPage = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if(refreshingPage) return;
+      refreshingPage = true;
+      localStorage.removeItem(PWA_KEYS.updateFlag);
+      window.location.reload();
+    });
+  });
+}
+
+document.getElementById('btnUpdateNow').addEventListener('click', () => {
+  try{
+    createLocalBackup();
+    localStorage.setItem(PWA_KEYS.updateFlag, '1');
+    const target = waitingWorker || (swRegistration && swRegistration.waiting);
+    if(target){
+      target.postMessage({ type:'SKIP_WAITING' });
+    }else{
+      localStorage.removeItem(PWA_KEYS.updateFlag);
+      window.location.reload();
+    }
+  }catch(e){
+    console.error('[PWA] Update failed, restoring backup:', e);
+    restoreLocalBackup();
+    localStorage.removeItem(PWA_KEYS.updateFlag);
+    toast('Update failed. Your data is safe.', 'error');
+  }
+  hideUpdatePopup();
+});
+document.getElementById('btnUpdateLater').addEventListener('click', hideUpdatePopup);
+
+/* ---------- Install prompt (Add to Home Screen) ---------- */
+let deferredInstallPrompt = null;
+const installFab = document.getElementById('installFab');
+const miInstallApp = document.getElementById('miInstallApp');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if(installFab) installFab.style.display = 'flex';
+  if(miInstallApp) miInstallApp.style.display = 'flex';
+});
+
+async function triggerInstall(){
+  if(!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const choice = await deferredInstallPrompt.userChoice;
+  if(choice.outcome === 'accepted'){ toast('EduPay Pico installed!', 'success', '📲'); }
+  deferredInstallPrompt = null;
+  if(installFab) installFab.style.display = 'none';
+  if(miInstallApp) miInstallApp.style.display = 'none';
+}
+if(installFab) installFab.addEventListener('click', triggerInstall);
+if(miInstallApp) miInstallApp.addEventListener('click', triggerInstall);
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  if(installFab) installFab.style.display = 'none';
+  if(miInstallApp) miInstallApp.style.display = 'none';
+  toast('EduPay Pico added to your home screen', 'success', '🎉');
+});
